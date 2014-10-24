@@ -171,20 +171,42 @@
 				//Load the tpl.
 				url = 'nameToUrl' in req ? req.nameToUrl(modName, "." + ext) : req.toUrl(modName + "." + ext);
 				
-				tpl.get(url, function (content) {
-					content = template(content);
-					
-					if(!config.isBuild) {
-					//if(typeof window !== "undefined" && window.navigator && window.document) {
-						content = new Function('obj', content);
-					}
-					content = strip ? tpl.strip(content) : content;
-					
-					if (config.isBuild && config.inlineText) {
-						buildMap[name] = content;
-					}
-					onLoad(content);
-				});
+				tpl.get(url, function(content) {
+          var rg = /<script[^<>]*?id[^<>"=]*?=[^<>"=]*?"([^<>"]*?)"[^<>]*?>(.*?)<\/script>/g
+            , cnt = content.replace(/\n|\r/g, '')
+            , m
+            , i
+            , ncontent = [content]
+            , flag = false;
+
+          while ((m = rg.exec(cnt)) != null){
+            if (!flag){
+              ncontent = [];
+              flag = true;
+            }
+            ncontent[m[1]] = m[2];
+          }
+
+          for (i in ncontent) {
+            ncontent[i] = template(ncontent[i]);
+
+            if (!config.isBuild) {
+              //if(typeof window !== "undefined" && window.navigator && window.document) {
+              ncontent[i] = new Function('obj', ncontent[i]);
+            }
+            ncontent[i] = strip ? tpl.strip(ncontent[i]) : ncontent[i];
+
+          }
+
+          if (!flag){
+            ncontent = ncontent[0];
+          }
+
+          if (config.isBuild && config.inlineText) {
+            buildMap[name] = ncontent;
+          }
+          onLoad(ncontent);
+        });
 
 			},
 
